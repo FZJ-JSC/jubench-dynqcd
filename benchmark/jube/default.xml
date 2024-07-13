@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jube>
+    <benchmark name="dynqcdbench" outpath="run">
+
+	<fileset name="files_compile">
+	    <copy>$jube_benchmark_home/../../src/dynqcd</copy>
+	</fileset>
+
+	<fileset name="files_execute">
+	    <copy>$jube_benchmark_home/../../src/parameters</copy>
+	    <copy>$jube_benchmark_home/../../src/lattices.dat</copy>
+	    <copy>$jube_benchmark_home/../../src/verify.sh</copy>
+	</fileset>
+
+	<parameterset name="modules">
+	    <parameter name="load_modules">module load Stages/2024; module load GCC/12.3.0; module load OpenMPI/4.1.5</parameter>
+	</parameterset>
+
+	<parameterset name="systemParameter" init_with="platform.xml">
+	    <parameter name="nodes" type="int">8</parameter>
+	    <parameter name="taskspernode" type="int">32</parameter>
+	    <parameter name="threadspertask" type="int">4</parameter>
+	    <parameter name="timelimit">00:30:00</parameter>
+	    <parameter name="queue">dc-cpu</parameter>
+	    <parameter name="account">zam</parameter>
+	    <parameter name="preprocess">${load_modules}</parameter>
+	    <parameter name="executable">compile/dynqcd/dynqcd</parameter>
+	    <parameter name="args_exec">parameters</parameter>
+	    <parameter name="postprocess">./verify.sh job.out</parameter>
+	</parameterset>
+	<parameterset name="executeset" init_with="platform.xml">
+	    <parameter name="args_starter">--cpus-per-task=$threadspertask</parameter>
+	</parameterset>
+
+	<step name="compile">
+	    <use>files_compile</use>
+	    <use>modules</use>
+	    <do>${load_modules}</do>
+	    <do>pushd dynqcd; make -j HAVE_FFTW=0 HAVE_LAPACK=0; popd</do>
+	</step>
+
+	<step name="execute" depend="compile">
+	    <use>files_execute</use>
+	    <use>modules</use>
+	    <use>executeset</use>
+	    <use>systemParameter</use>
+	    <use from="platform.xml">jobfiles</use>
+	    <use from="platform.xml">executesub</use>
+	    <do>$submit $submit_script</do>
+	    <do done_file="$done_file"></do>
+	</step>
+
+	<patternset name="pattern">
+	    <pattern name="runtime" type="float">stn0pf: eigcg sec= ${jube_pat_fp}</pattern>
+	    <pattern name="_verify" type="int">${jube_pat_int} steps OK from 400 steps</pattern>
+	    <pattern name="isok" type="bool" mode="python">${_verify} == 400</pattern>
+	</patternset>
+
+	<analyser name="analyse" reduce="false">
+	    <use>pattern</use>
+	    <analyse step="execute">
+		<file>job.out</file>
+	    </analyse>
+	</analyser>
+
+	<result>
+	    <use>analyse</use>
+	    <table name="result" style="pretty" sort="nodes" tag="!csv">
+		<column title="Nodes">nodes</column>
+		<column title="Tasks/Node">taskspernode</column>
+		<column title="Threads/Task">threadspertask</column>
+		<column format=".1f" title="Runtime / s">runtime</column>
+		<column title="Verified">isok</column>
+	    </table>
+	</result>
+
+    </benchmark>
+</jube>
