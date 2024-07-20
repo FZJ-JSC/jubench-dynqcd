@@ -22,7 +22,7 @@ authors:
     family-names: Nassyr
     affiliation: Forschungszentrum Jülich, Jülich Supercomputing Centre
     orcid: 'https://orcid.org/0000-0002-0035-244X'
-abstract: "The DynQCD benchmark of the JUPITER Benchmark Suite"
+abstract: "The DynQCD (CPU) benchmark of the JUPITER Benchmark Suite"
 identifiers:
   - type: doi
     value: 10.5281/zenodo.12737680
